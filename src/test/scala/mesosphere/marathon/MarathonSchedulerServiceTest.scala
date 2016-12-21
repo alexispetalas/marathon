@@ -8,6 +8,7 @@ import mesosphere.AkkaFunTest
 import mesosphere.chaos.http.HttpConf
 import mesosphere.marathon.Protos.StorageVersion
 import mesosphere.marathon.core.base.RichRuntime
+import mesosphere.marathon.core.deployment.DeploymentManager
 import mesosphere.marathon.core.election.ElectionService
 import mesosphere.marathon.core.group.GroupManager
 import mesosphere.marathon.core.health.HealthCheckManager
@@ -78,6 +79,7 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
   private[this] var heartbeatActor: ActorRef = _
   private[this] var prePostDriverCallbacks: scala.collection.immutable.Seq[PrePostDriverCallback] = _
   private[this] var mockTimer: Timer = _
+  private[this] var deploymentManager: DeploymentManager = _
 
   before {
     probe = TestProbe()
@@ -96,6 +98,7 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
     heartbeatActor = heartbeatProbe.ref
     prePostDriverCallbacks = scala.collection.immutable.Seq.empty
     mockTimer = mock[Timer]
+    deploymentManager = mock[DeploymentManager]
   }
 
   def driverFactory[T](provide: => SchedulerDriver): SchedulerDriverFactory = {
@@ -114,6 +117,7 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
       driverFactory(mock[SchedulerDriver]),
       system,
       migration,
+      deploymentManager,
       schedulerActor,
       heartbeatActor
     )
@@ -136,6 +140,7 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
       driverFactory(driver),
       system,
       migration,
+      deploymentManager,
       schedulerActor,
       heartbeatActor
     ) {
@@ -163,6 +168,7 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
       driverFactory(mock[SchedulerDriver]),
       system,
       migration,
+      deploymentManager,
       schedulerActor,
       heartbeatActor) {
       override def newTimer() = mockTimer
@@ -190,6 +196,7 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
       driverFactory(mock[SchedulerDriver]),
       system,
       migration,
+      deploymentManager,
       schedulerActor,
       heartbeatActor
     )
@@ -222,6 +229,7 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
       driverFactory,
       system,
       migration,
+      deploymentManager,
       schedulerActor,
       heartbeatActor
     )
@@ -249,6 +257,7 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
       driverFactory,
       system,
       migration,
+      deploymentManager,
       schedulerActor,
       heartbeatActor
     )
@@ -280,6 +289,7 @@ class MarathonSchedulerServiceTest extends AkkaFunTest {
       driverFactory,
       system,
       migration,
+      deploymentManager,
       schedulerActor,
       heartbeatActor
     )

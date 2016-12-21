@@ -14,7 +14,7 @@ import mesosphere.marathon.plugin.auth.Identity
 import mesosphere.marathon.state.PathId.StringPathId
 import mesosphere.marathon.state._
 import mesosphere.marathon.test.{ GroupCreation, MarathonSpec, Mockito }
-import mesosphere.marathon.upgrade.{ DeploymentPlan, DeploymentStep }
+import mesosphere.marathon.core.deployment.{ DeploymentPlan, DeploymentStep }
 import org.mockito.Mockito._
 import org.scalatest.{ GivenWhenThen, Matchers }
 

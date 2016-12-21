@@ -1,19 +1,19 @@
-package mesosphere.marathon.upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
 import akka.Done
 import akka.actor._
 import akka.event.EventStream
 import com.typesafe.scalalogging.StrictLogging
+import mesosphere.marathon.SchedulerActions
 import mesosphere.marathon.core.event.DeploymentStatus
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.launchqueue.LaunchQueue
 import mesosphere.marathon.core.readiness.ReadinessCheckExecutor
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.state.RunSpec
-import mesosphere.marathon.{ AppStartCanceledException, SchedulerActions }
 
 import scala.concurrent.Promise
-import scala.util.control.NonFatal
 
 class AppStartActor(
     val deploymentManager: ActorRef,
@@ -46,15 +46,6 @@ class AppStartActor(
   def success(): Unit = {
     logger.info(s"Successfully started $scaleTo instances of ${runSpec.id}")
     promise.success(())
-    context.stop(self)
-  }
-
-  override def shutdown(): Unit = {
-    if (!promise.isCompleted && promise.tryFailure(new AppStartCanceledException("The app start has been cancelled"))) {
-      scheduler.stopRunSpec(runSpec).onFailure {
-        case NonFatal(e) => logger.error(s"while stopping app ${runSpec.id}", e)
-      }(context.dispatcher)
-    }
     context.stop(self)
   }
 }

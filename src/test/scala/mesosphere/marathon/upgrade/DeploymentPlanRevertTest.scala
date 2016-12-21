@@ -1,5 +1,4 @@
-package mesosphere.marathon
-package upgrade
+package mesosphere.marathon.core.deployment
 
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state._

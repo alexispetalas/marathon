@@ -1,15 +1,15 @@
 package mesosphere.marathon
 package api.v2
 
-import java.util
 import javax.ws.rs.core.Response
 
+import akka.Done
 import akka.event.EventStream
-import mesosphere.marathon._
 import mesosphere.marathon.api._
 import mesosphere.marathon.core.appinfo.AppInfo.Embed
 import mesosphere.marathon.core.appinfo._
 import mesosphere.marathon.core.base.ConstantClock
+import mesosphere.marathon.core.deployment.DeploymentPlan
 import mesosphere.marathon.core.group.GroupManager
 import mesosphere.marathon.core.health.HealthCheckManager
 import mesosphere.marathon.core.plugin.PluginManager
@@ -20,10 +20,9 @@ import mesosphere.marathon.state.VersionInfo.OnlyVersion
 import mesosphere.marathon.state._
 import mesosphere.marathon.storage.repository.{ AppRepository, GroupRepository, TaskFailureRepository }
 import mesosphere.marathon.test.{ GroupCreation, MarathonActorSupport, MarathonSpec, Mockito }
-import mesosphere.marathon.upgrade.DeploymentPlan
 import org.apache.mesos.{ Protos => Mesos }
 import org.scalatest.{ GivenWhenThen, Matchers }
-import play.api.libs.json.{ JsDefined, JsNumber, JsObject, JsResultException, JsString, Json }
+import play.api.libs.json._
 
 import scala.collection.immutable
 import scala.collection.immutable.Seq
@@ -87,7 +86,6 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     response.getMetadata.containsKey(RestResource.DeploymentHeader) should be(true)
 
     And("the JSON is as expected, including a newly generated version")
-    import mesosphere.marathon.api.v2.json.Formats._
     val expected = AppInfo(
       app.copy(versionInfo = VersionInfo.OnlyVersion(clock.now())),
       maybeTasks = Some(immutable.Seq.empty),
@@ -135,7 +133,6 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     response.getMetadata.containsKey(RestResource.DeploymentHeader) should be(true)
 
     And("the JSON is as expected, including a newly generated version")
-    import mesosphere.marathon.api.v2.json.Formats._
     val expected = AppInfo(
       app.copy(versionInfo = VersionInfo.OnlyVersion(clock.now())),
       maybeTasks = Some(immutable.Seq.empty),
@@ -165,7 +162,6 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     response.getMetadata.containsKey(RestResource.DeploymentHeader) should be(true)
 
     And("the JSON is as expected, including a newly generated version")
-    import mesosphere.marathon.api.v2.json.Formats._
     val expected = AppInfo(
       app.copy(versionInfo = VersionInfo.OnlyVersion(clock.now())),
       maybeTasks = Some(immutable.Seq.empty),
@@ -235,7 +231,6 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     response.getMetadata.containsKey(RestResource.DeploymentHeader) should be(true)
 
     And("the JSON is as expected, including a newly generated version")
-    import mesosphere.marathon.api.v2.json.Formats._
     val expected = AppInfo(
       app.copy(versionInfo = VersionInfo.OnlyVersion(clock.now())),
       maybeTasks = Some(immutable.Seq.empty),
@@ -266,7 +261,6 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     response.getMetadata.containsKey(RestResource.DeploymentHeader) should be(true)
 
     And("the JSON is as expected, including a newly generated version")
-    import mesosphere.marathon.api.v2.json.Formats._
     val expected = AppInfo(
       app.copy(
         versionInfo = VersionInfo.OnlyVersion(clock.now()),
@@ -300,7 +294,6 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     response.getMetadata.containsKey(RestResource.DeploymentHeader) should be(true)
 
     And("the JSON is as expected, including a newly generated version")
-    import mesosphere.marathon.api.v2.json.Formats._
     val expected = AppInfo(
       app.copy(versionInfo = VersionInfo.OnlyVersion(clock.now())),
       maybeTasks = Some(immutable.Seq.empty),
@@ -336,7 +329,6 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     response.getMetadata.containsKey(RestResource.DeploymentHeader) should be(true)
 
     And("the JSON is as expected, including a newly generated version")
-    import mesosphere.marathon.api.v2.json.Formats._
     val expected = AppInfo(
       app.copy(versionInfo = VersionInfo.OnlyVersion(clock.now())),
       maybeTasks = Some(immutable.Seq.empty),
@@ -379,7 +371,6 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     response.getMetadata.containsKey(RestResource.DeploymentHeader) should be(true)
 
     And("the JSON is as expected, including a newly generated version")
-    import mesosphere.marathon.api.v2.json.Formats._
     val expected = AppInfo(
       app.copy(
         versionInfo = VersionInfo.OnlyVersion(clock.now()),
@@ -457,7 +448,6 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     response.getMetadata.containsKey(RestResource.DeploymentHeader) should be(true)
 
     And("the JSON is as expected, including a newly generated version")
-    import mesosphere.marathon.api.v2.json.Formats._
     val expected = AppInfo(
       app.copy(versionInfo = VersionInfo.OnlyVersion(clock.now())),
       maybeTasks = Some(immutable.Seq.empty),
@@ -487,7 +477,6 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     response.getMetadata.containsKey(RestResource.DeploymentHeader) should be(true)
 
     And("the JSON is as expected, including a newly generated version")
-    import mesosphere.marathon.api.v2.json.Formats._
     val expected = AppInfo(
       app.copy(versionInfo = VersionInfo.OnlyVersion(clock.now())),
       maybeTasks = Some(immutable.Seq.empty),
@@ -592,7 +581,6 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     response.getStatus should be(201)
 
     And("the JSON is as expected, including a newly generated version")
-    import mesosphere.marathon.api.v2.json.Formats._
     val expected = AppInfo(
       app.copy(versionInfo = VersionInfo.OnlyVersion(clock.now())),
       maybeTasks = Some(immutable.Seq.empty),
@@ -1034,7 +1022,7 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     val app = AppDefinition(id = PathId("/app"))
     val rootGroup = createRootGroup(Map(app.id -> app))
     val plan = DeploymentPlan(rootGroup, rootGroup)
-    service.deploy(any, any) returns Future.successful(())
+    service.deploy(any, any) returns Future.successful(Done)
     groupManager.app(PathId("/app")) returns Future.successful(Some(app))
 
     groupManager.updateApp(any, any, any, any, any) returns Future.successful(plan)
@@ -1122,7 +1110,7 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     Given("An unauthenticated request")
     auth.authenticated = false
     val req = auth.request
-    val embed = new util.HashSet[String]()
+    val embed = new java.util.HashSet[String]()
     val app = """{"id":"/a/b/c","cmd":"foo","ports":[]}"""
     groupManager.rootGroup() returns Future.successful(createRootGroup())
 
@@ -1173,7 +1161,7 @@ class AppsResourceTest extends MarathonSpec with MarathonActorSupport with Match
     auth.authenticated = true
     auth.authorized = false
     val req = auth.request
-    val embed = new util.HashSet[String]()
+    val embed = new java.util.HashSet[String]()
     val app = """{"id":"/a","cmd":"foo","ports":[]}"""
 
     When("we try to create an app")

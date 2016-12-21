@@ -1,4 +1,5 @@
-package mesosphere.marathon.upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
 import akka.actor.{ Actor, ActorRef }
 import mesosphere.marathon.core.event._
@@ -9,7 +10,7 @@ import mesosphere.marathon.core.readiness.{ ReadinessCheckExecutor, ReadinessChe
 import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.state.{ AppDefinition, PathId, RunSpec, Timestamp }
-import mesosphere.marathon.upgrade.DeploymentManager.ReadinessCheckUpdate
+import mesosphere.marathon.core.deployment.impl.DeploymentManagerActor.ReadinessCheckUpdate
 import org.slf4j.LoggerFactory
 import rx.lang.scala.Subscription
 

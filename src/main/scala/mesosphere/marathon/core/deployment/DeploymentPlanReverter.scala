@@ -1,4 +1,5 @@
-package mesosphere.marathon.upgrade
+package mesosphere.marathon.core
+package deployment
 
 import mesosphere.marathon.core.pod.PodDefinition
 import mesosphere.marathon.state._
@@ -10,7 +11,7 @@ import scala.collection.immutable.Seq
   * Contains the logic to revert deployments by calculating the changes
   * of the deployment and applying the reverse on the given group.
   */
-private[upgrade] object DeploymentPlanReverter {
+private[deployment] object DeploymentPlanReverter {
   private[this] val log = LoggerFactory.getLogger(getClass)
 
   /**

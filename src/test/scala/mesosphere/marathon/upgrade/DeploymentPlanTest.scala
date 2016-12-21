@@ -1,5 +1,5 @@
 package mesosphere.marathon
-package upgrade
+package core.deployment
 
 import com.wix.accord._
 import mesosphere.marathon.core.instance.TestInstanceBuilder
@@ -9,8 +9,6 @@ import mesosphere.marathon.state._
 import mesosphere.marathon.test.{ GroupCreation, MarathonSpec, MarathonTestHelper, Mockito }
 import org.apache.mesos.{ Protos => mesos }
 import org.scalatest.{ GivenWhenThen, Matchers }
-
-import scala.collection.immutable.Seq
 
 class DeploymentPlanTest extends MarathonSpec with Matchers with GivenWhenThen with Mockito with GroupCreation {
 

@@ -1,5 +1,5 @@
-package mesosphere.marathon
-package upgrade
+package mesosphere.marathon.core
+package deployment
 
 import java.net.URL
 import java.util.UUID
@@ -9,12 +9,15 @@ import com.wix.accord.dsl._
 import mesosphere.marathon.api.v2.Validation._
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.pod.{ MesosContainer, PodDefinition }
+import mesosphere.marathon.core.readiness.ReadinessCheckResult
+import mesosphere.marathon.core.task.Task
 import mesosphere.marathon.raml.{ ArgvCommand, ShellCommand }
 import mesosphere.marathon.state._
 import mesosphere.marathon.stream._
 import org.slf4j.LoggerFactory
 
 import scala.collection.SortedMap
+import scala.collection.immutable.Seq
 
 sealed trait DeploymentAction {
   def runSpec: RunSpec
@@ -67,8 +70,18 @@ case class DeploymentStep(actions: Seq[DeploymentAction]) {
   def nonEmpty(): Boolean = actions.nonEmpty
 }
 
+case class DeploymentStepInfo(
+    plan: DeploymentPlan,
+    step: DeploymentStep,
+    nr: Int,
+    readinessChecks: Map[Task.Id, ReadinessCheckResult] = Map.empty) {
+  lazy val readinessChecksByApp: Map[PathId, Seq[ReadinessCheckResult]] = {
+    readinessChecks.values.groupBy(_.taskId.runSpecId).map { case (k, v) => k -> v.to[Seq] }.withDefaultValue(Seq.empty)
+  }
+}
+
 /**
-  * A deployment plan consists of the [[mesosphere.marathon.upgrade.DeploymentStep]]s necessary to
+  * A deployment plan consists of the [[mesosphere.marathon.core.deployment.DeploymentStep]]s necessary to
   * change the group state from original to target.
   *
   * The steps are executed sequentially after each other. The actions within a
@@ -182,7 +195,7 @@ object DeploymentPlan {
     * Perform a "layered" topological sort of all of the run specs.
     * The "layered" aspect groups the run specs that have the same length of dependencies for parallel deployment.
     */
-  private[upgrade] def runSpecsGroupedByLongestPath(
+  private[deployment] def runSpecsGroupedByLongestPath(
     rootGroup: RootGroup): SortedMap[Int, Set[RunSpec]] = {
 
     import org.jgrapht.DirectedGraph

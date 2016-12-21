@@ -1,10 +1,13 @@
-package mesosphere.marathon
-package upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
+import akka.Done
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.testkit.TestProbe
 import akka.util.Timeout
+import mesosphere.marathon.SchedulerActions
 import mesosphere.marathon.core.condition.Condition
+import mesosphere.marathon.core.deployment.impl.DeploymentManagerActor.DeploymentFinished
 import mesosphere.marathon.core.event.InstanceChanged
 import mesosphere.marathon.core.health.HealthCheckManager
 import mesosphere.marathon.core.instance.{ Instance, TestInstanceBuilder }
@@ -15,14 +18,14 @@ import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.io.storage.StorageProvider
 import mesosphere.marathon.state._
 import mesosphere.marathon.test.{ GroupCreation, MarathonSpec, Mockito }
-import mesosphere.marathon.upgrade.DeploymentManager.{ DeploymentFinished, DeploymentStepInfo }
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.Matchers
 
+import scala.collection.immutable.Seq
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 
 // TODO: this is NOT a unit test. the DeploymentActor create child actors that cannot be mocked in the current
 // setup which makes the test overly complicated because events etc have to be mocked for these.
@@ -40,7 +43,6 @@ class DeploymentActorTest
     val f = new Fixture
     implicit val system = f.system
     val managerProbe = TestProbe()
-    val receiverProbe = TestProbe()
     val app1 = AppDefinition(id = PathId("/app1"), cmd = Some("cmd"), instances = 2)
     val app2 = AppDefinition(id = PathId("/app2"), cmd = Some("cmd"), instances = 1)
     val app3 = AppDefinition(id = PathId("/app3"), cmd = Some("cmd"), instances = 1)
@@ -103,7 +105,7 @@ class DeploymentActorTest
     })
 
     try {
-      f.deploymentActor(managerProbe.ref, receiverProbe.ref, plan)
+      f.deploymentActor(managerProbe.ref, Promise[Done](), plan)
       plan.steps.zipWithIndex.foreach {
         case (step, num) => managerProbe.expectMsg(7.seconds, DeploymentStepInfo(plan, step, num + 1))
       }
@@ -125,7 +127,7 @@ class DeploymentActorTest
     val f = new Fixture
     implicit val system = f.system
     val managerProbe = TestProbe()
-    val receiverProbe = TestProbe()
+    val promise = Promise[Done]()
     val app = AppDefinition(id = PathId("/app1"), cmd = Some("cmd"), instances = 2)
     val origGroup = createRootGroup(groups = Set(createGroup(PathId("/foo/bar"), Map(app.id -> app))))
 
@@ -154,9 +156,8 @@ class DeploymentActorTest
     })
 
     try {
-
-      f.deploymentActor(managerProbe.ref, receiverProbe.ref, plan)
-      receiverProbe.expectMsg(DeploymentFinished(plan))
+      f.deploymentActor(managerProbe.ref, promise, plan)
+      promise.future.futureValue should be (Done)
 
       f.killService.killed should contain(instance1_1.instanceId)
       f.killService.killed should contain(instance1_2.instanceId)
@@ -170,7 +171,7 @@ class DeploymentActorTest
     val f = new Fixture
     implicit val system = f.system
     val managerProbe = TestProbe()
-    val receiverProbe = TestProbe()
+    val promise = Promise[Done]()
 
     val app = AppDefinition(id = PathId("/app1"), cmd = Some("cmd"), instances = 0)
     val origGroup = createRootGroup(groups = Set(createGroup(PathId("/foo/bar"), Map(app.id -> app))))
@@ -184,8 +185,8 @@ class DeploymentActorTest
     when(f.tracker.specInstancesSync(app.id)).thenReturn(Seq.empty[Instance])
 
     try {
-      f.deploymentActor(managerProbe.ref, receiverProbe.ref, plan)
-      receiverProbe.expectMsg(DeploymentFinished(plan))
+      f.deploymentActor(managerProbe.ref, promise, plan)
+      promise.future.futureValue should be (Done)
     } finally {
       Await.result(system.terminate(), Duration.Inf)
     }
@@ -195,7 +196,6 @@ class DeploymentActorTest
     val f = new Fixture
     implicit val system = f.system
     val managerProbe = TestProbe()
-    val receiverProbe = TestProbe()
     val app1 = AppDefinition(id = PathId("/app1"), cmd = Some("cmd"), instances = 3)
     val origGroup = createRootGroup(groups = Set(createGroup(PathId("/foo/bar"), Map(app1.id -> app1))))
 
@@ -213,7 +213,7 @@ class DeploymentActorTest
     f.tracker.specInstances(eq(app1.id))(any[ExecutionContext]) returns Future.successful(Seq(instance1_1, instance1_2, instance1_3))
 
     try {
-      f.deploymentActor(managerProbe.ref, receiverProbe.ref, plan)
+      f.deploymentActor(managerProbe.ref, Promise[Done](), plan)
 
       plan.steps.zipWithIndex.foreach {
         case (step, num) => managerProbe.expectMsg(5.seconds, DeploymentStepInfo(plan, step, num + 1))
@@ -236,7 +236,7 @@ class DeploymentActorTest
     val scheduler: SchedulerActions = mock[SchedulerActions]
     val storage: StorageProvider = mock[StorageProvider]
     val hcManager: HealthCheckManager = mock[HealthCheckManager]
-    val config: UpgradeConfig = mock[UpgradeConfig]
+    val config: DeploymentConfig = mock[DeploymentConfig]
     val readinessCheckExecutor: ReadinessCheckExecutor = mock[ReadinessCheckExecutor]
     config.killBatchSize returns 100
     config.killBatchCycle returns 10.seconds
@@ -248,10 +248,10 @@ class DeploymentActorTest
       InstanceChanged(instanceId, app.version, app.id, condition, instance)
     }
 
-    def deploymentActor(manager: ActorRef, receiver: ActorRef, plan: DeploymentPlan) = system.actorOf(
+    def deploymentActor(manager: ActorRef, promise: Promise[Done], plan: DeploymentPlan) = system.actorOf(
       DeploymentActor.props(
         manager,
-        receiver,
+        promise,
         killService,
         scheduler,
         plan,

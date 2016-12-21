@@ -1,8 +1,9 @@
-package mesosphere.marathon
-package upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
 import akka.testkit.{ TestActorRef, TestProbe }
 import com.codahale.metrics.MetricRegistry
+import mesosphere.marathon.SchedulerActions
 import mesosphere.marathon.core.condition.Condition
 import mesosphere.marathon.core.condition.Condition.{ Failed, Running }
 import mesosphere.marathon.core.event.{ DeploymentStatus, _ }
@@ -153,24 +154,6 @@ class TaskStartActorTest
     watch(ref)
 
     Await.result(promise.future, 3.seconds) should be(())
-
-    expectTerminated(ref)
-  }
-
-  test("Cancelled") {
-    val f = new Fixture
-    val promise = Promise[Unit]()
-    val app = AppDefinition("/myApp".toPath, instances = 5)
-    when(f.launchQueue.get(app.id)).thenReturn(None)
-
-    val ref = f.startActor(app, app.instances, promise)
-    watch(ref)
-
-    ref ! DeploymentActor.Shutdown
-
-    intercept[TaskUpgradeCanceledException] {
-      Await.result(promise.future, 5.seconds)
-    }.getMessage should equal("The task upgrade has been cancelled")
 
     expectTerminated(ref)
   }

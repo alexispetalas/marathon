@@ -1,4 +1,4 @@
-package mesosphere.marathon.upgrade
+package mesosphere.marathon.core.deployment.impl
 
 import mesosphere.marathon.state.{ AppDefinition, PathId, Residency, UpgradeStrategy }
 import mesosphere.marathon.test.Mockito
@@ -6,7 +6,7 @@ import org.scalatest.{ FunSuite, GivenWhenThen, Matchers }
 
 class RestartStrategyTest extends FunSuite with Matchers with GivenWhenThen with Mockito {
 
-  import mesosphere.marathon.upgrade.TaskReplaceActor._
+  import mesosphere.marathon.core.deployment.impl.TaskReplaceActor._
 
   test("strategy for resident app with 1 instance") {
     Given("A resident app")

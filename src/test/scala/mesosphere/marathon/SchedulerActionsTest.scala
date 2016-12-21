@@ -1,6 +1,5 @@
 package mesosphere.marathon
 
-import akka.testkit.TestProbe
 import mesosphere.marathon.core.base.ConstantClock
 import mesosphere.marathon.core.condition.Condition
 import mesosphere.marathon.core.health.HealthCheckManager
@@ -10,7 +9,7 @@ import mesosphere.marathon.core.launchqueue.LaunchQueue
 import mesosphere.marathon.core.task.termination.{ KillReason, KillService }
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.core.task.tracker.InstanceTracker.{ InstancesBySpec, SpecInstances }
-import mesosphere.marathon.state.{ AppDefinition, RootGroup, PathId, Timestamp }
+import mesosphere.marathon.state.{ AppDefinition, PathId, RootGroup, Timestamp }
 import mesosphere.marathon.storage.repository.GroupRepository
 import mesosphere.marathon.stream._
 import mesosphere.marathon.test.{ MarathonActorSupport, MarathonSpec, MarathonTestHelper, Mockito }
@@ -20,8 +19,8 @@ import org.scalatest.concurrent.{ PatienceConfiguration, ScalaFutures }
 import org.scalatest.time.{ Millis, Span }
 import org.scalatest.{ GivenWhenThen, Matchers }
 
-import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContext, Future }
 
 class SchedulerActionsTest
     extends MarathonActorSupport
@@ -301,7 +300,6 @@ class SchedulerActionsTest
       instanceTracker,
       queue,
       system.eventStream,
-      TestProbe().ref,
       killService
     )
   }

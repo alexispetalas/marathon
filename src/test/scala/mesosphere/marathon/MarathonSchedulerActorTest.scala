@@ -7,6 +7,8 @@ import akka.stream.scaladsl.Source
 import akka.testkit._
 import akka.util.Timeout
 import mesosphere.marathon.MarathonSchedulerActor._
+import mesosphere.marathon.core.deployment._
+import mesosphere.marathon.core.deployment.impl.{ DeploymentManagerActor, DeploymentManagerDelegate }
 import mesosphere.marathon.core.election.{ ElectionService, LocalLeadershipEvent }
 import mesosphere.marathon.core.event._
 import mesosphere.marathon.core.health.HealthCheckManager
@@ -25,7 +27,6 @@ import mesosphere.marathon.state._
 import mesosphere.marathon.storage.repository.{ DeploymentRepository, FrameworkIdRepository, GroupRepository, TaskFailureRepository }
 import mesosphere.marathon.stream._
 import mesosphere.marathon.test.{ GroupCreation, MarathonActorSupport, MarathonSpec, Mockito }
-import mesosphere.marathon.upgrade._
 import org.apache.mesos.Protos.{ Status, TaskStatus }
 import org.apache.mesos.SchedulerDriver
 import org.mockito
@@ -469,8 +470,7 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
     val f = new Fixture
     import f._
     val actions = mock[SchedulerActions]
-    val actionsFactory: ActorRef => SchedulerActions = _ => actions
-    val schedulerActor = createActor(Some(actionsFactory))
+    val schedulerActor = createActor(Some(actions))
 
     val reconciliationPromise = Promise[Status]()
     actions.reconcileTasks(any) returns reconciliationPromise.future
@@ -496,8 +496,7 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
     val f = new Fixture
     import f._
     val actions = mock[SchedulerActions]
-    val actionsFactory: ActorRef => SchedulerActions = _ => actions
-    val schedulerActor = createActor(Some(actionsFactory))
+    val schedulerActor = createActor(Some(actions))
 
     actions.reconcileTasks(any) returns Future.successful(Status.DRIVER_RUNNING)
     groupRepo.root() returns Future.successful(createRootGroup())
@@ -530,32 +529,36 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
     val storage: StorageProvider = mock[StorageProvider]
     val taskFailureEventRepository: TaskFailureRepository = mock[TaskFailureRepository]
     val electionService: ElectionService = mock[ElectionService]
-    val schedulerActions: ActorRef => SchedulerActions = ref => {
-      new SchedulerActions(
-        groupRepo, hcManager, instanceTracker, queue, new EventStream(system), ref, killService)(system.dispatcher)
-    }
-    val conf: UpgradeConfig = mock[UpgradeConfig]
+    val schedulerActions: SchedulerActions = new SchedulerActions(
+      groupRepo, hcManager, instanceTracker, queue, new EventStream(system), killService)(system.dispatcher)
+    val conf: DeploymentConfig = mock[DeploymentConfig]
     val readinessCheckExecutor: ReadinessCheckExecutor = mock[ReadinessCheckExecutor]
-    val deploymentManagerProps: SchedulerActions => Props = schedulerActions => Props(new DeploymentManager(
-      instanceTracker,
-      killService,
-      queue,
-      schedulerActions,
-      storage,
-      hcManager,
-      system.eventStream,
-      readinessCheckExecutor,
-      deploymentRepo
-    ))
 
     val historyActorProps: Props = Props(new HistoryActor(system.eventStream, taskFailureEventRepository))
 
-    def createActor(overrideActions: Option[(ActorRef) => SchedulerActions] = None) = {
+    def createActor(overrideActions: Option[SchedulerActions] = None) = {
       val actions = overrideActions.getOrElse(schedulerActions)
+
+      val deploymentManagerProps: Props = DeploymentManagerActor.props(
+        instanceTracker,
+        killService,
+        queue,
+        actions,
+        storage,
+        hcManager,
+        system.eventStream,
+        readinessCheckExecutor,
+        deploymentRepo
+      )
+
+      val deploymentManager = new DeploymentManagerDelegate(conf, system.actorOf(deploymentManagerProps))
+
       system.actorOf(
         MarathonSchedulerActor.props(
+          groupRepo,
           actions,
-          deploymentManagerProps,
+          deploymentManager,
+          deploymentRepo,
           historyActorProps,
           hcManager,
           killService,
@@ -579,6 +582,7 @@ class MarathonSchedulerActorTest extends MarathonActorSupport
     queue.get(any[PathId]) returns None
     conf.killBatchCycle returns 1.seconds
     conf.killBatchSize returns 100
+    conf.deploymentManagerRequestDuration returns 1.seconds
 
     instanceTracker.countLaunchedSpecInstancesSync(any[PathId]) returns 0
     instanceTracker.specInstances(any)(any) returns Future.successful(Seq.empty[Instance])

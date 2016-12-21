@@ -1,9 +1,9 @@
-package mesosphere.marathon
-package upgrade
+package mesosphere.marathon.core.deployment
 
 import mesosphere.marathon.core.condition.Condition
 import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.state.{ KillSelection, Timestamp }
+import scala.collection.immutable._
 
 case class ScalingProposition(tasksToKill: Option[Seq[Instance]], tasksToStart: Option[Int])
 

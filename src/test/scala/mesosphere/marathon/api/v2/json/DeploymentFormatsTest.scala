@@ -2,10 +2,10 @@ package mesosphere.marathon.api.v2.json
 
 import java.util.UUID
 
+import mesosphere.marathon.core.deployment._
 import mesosphere.marathon.state.PathId._
 import mesosphere.marathon.state.{ AppDefinition, Group, Timestamp }
 import mesosphere.marathon.test.{ GroupCreation, MarathonSpec }
-import mesosphere.marathon.upgrade._
 import play.api.libs.json._
 
 import scala.collection.immutable.Seq

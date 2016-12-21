@@ -1,7 +1,7 @@
-package mesosphere.marathon
-package upgrade
+package mesosphere.marathon.core.deployment.impl
 
 import akka.testkit.{ TestActorRef, TestProbe }
+import mesosphere.marathon.SchedulerActions
 import mesosphere.marathon.core.condition.Condition
 import mesosphere.marathon.core.event.{ DeploymentStatus, InstanceChanged, InstanceHealthChanged }
 import mesosphere.marathon.core.health.{ MarathonHttpHealthCheck, PortReference }
@@ -12,11 +12,10 @@ import mesosphere.marathon.core.readiness.ReadinessCheckExecutor
 import mesosphere.marathon.core.task.tracker.InstanceTracker
 import mesosphere.marathon.state.{ AppDefinition, PathId }
 import mesosphere.marathon.test.{ MarathonActorSupport, MarathonSpec, MarathonTestHelper, Mockito }
-import mesosphere.marathon.{ AppStartCanceledException, SchedulerActions }
 import org.scalatest.{ BeforeAndAfter, Matchers }
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, Promise }
 
 class AppStartActorTest
     extends MarathonActorSupport
@@ -57,26 +56,6 @@ class AppStartActorTest
     Await.result(promise.future, 5.seconds)
 
     verify(f.scheduler).startRunSpec(app.copy(instances = 2))
-    expectTerminated(ref)
-  }
-
-  test("Failed") {
-    val f = new Fixture
-    f.scheduler.stopRunSpec(any).asInstanceOf[Future[Unit]] returns Future.successful(())
-
-    val app = AppDefinition(id = f.appId, instances = 10)
-    val promise = Promise[Unit]()
-    val ref = f.startActor(app, scaleTo = 2, promise)
-    watch(ref)
-
-    ref ! DeploymentActor.Shutdown
-
-    intercept[AppStartCanceledException] {
-      Await.result(promise.future, 5.seconds)
-    }
-
-    verify(f.scheduler).startRunSpec(app.copy(instances = 2))
-    verify(f.scheduler).stopRunSpec(app)
     expectTerminated(ref)
   }
 

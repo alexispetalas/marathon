@@ -1,5 +1,5 @@
-package mesosphere.marathon
-package upgrade
+package mesosphere.marathon.core.deployment
+package impl
 
 import akka.actor.{ Actor, Props }
 import akka.testkit.TestActorRef
@@ -483,26 +483,6 @@ class TaskReplaceActorTest
     Then("It needs to wait for the readiness checks to pass")
     expectTerminated(ref)
     promise.isCompleted should be(true)
-  }
-
-  test("Cancelled") {
-    val f = new Fixture
-    val app = AppDefinition(id = "/myApp".toPath, instances = 2)
-
-    when(f.tracker.specInstancesSync(app.id)).thenReturn(Seq.empty)
-
-    val promise = Promise[Unit]()
-
-    val ref = f.replaceActor(app, promise)
-    watch(ref)
-
-    ref ! DeploymentActor.Shutdown
-
-    intercept[TaskUpgradeCanceledException] {
-      Await.result(promise.future, 5.seconds)
-    }.getMessage should equal("The task upgrade has been cancelled")
-
-    expectTerminated(ref)
   }
 
   test("Wait until the tasks are killed") {
