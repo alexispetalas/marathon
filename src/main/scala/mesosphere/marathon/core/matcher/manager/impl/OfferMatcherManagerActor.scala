@@ -43,6 +43,21 @@ private[manager] object OfferMatcherManagerActor {
     Props(new OfferMatcherManagerActor(metrics, random, clock, offerMatcherConfig, offersWanted))
   }
 
+  /**
+   *
+   * @constructor Create a new instance that bundles offer, deadline and ops.
+   * @param offer The offer that is matched.
+   * @param deadline If an offer is not processed until the deadline the promise
+   *     is succeeded without a match.
+   * @param promise The promise will receive the matched instance ops if a match
+   *     if found. The promise might be fulfilled by the sender, e.g. [[mesosphere.marathon.core.matcher.base.util.ActorOfferMatcher]]
+   *     if the deadline is reached before the offer has been processed.
+   * @param matcherQueue The offer matchers which should be applied to the
+   *     offer.
+   * @param ops ???
+   * @param matchPasses ???
+   * @param resendThisOffer ???
+   */
   private case class OfferData(
       offer: Offer,
       deadline: Timestamp,
@@ -214,7 +229,7 @@ private[impl] class OfferMatcherManagerActor private (
     case MatchTimeout(offerId) =>
       // When the timeout is reached, we will answer with all matching instances we found until then.
       // Since we cannot be sure if we found all matching instances, we set resendThisOffer to true.
-      offerQueues.get(offerId).foreach(sendMatchResult(_, resendThisOffer = true))
+      offerQueues.get(offerId).foreach(completeWithMatchResult(_, resendThisOffer = true))
   }
 
   private[this] def scheduleNextMatcherOrFinish(data: OfferData): Unit = {
@@ -246,11 +261,11 @@ private[impl] class OfferMatcherManagerActor private (
               log.warning("Received error from {}", e)
               MatchedInstanceOps.noMatch(data.offer.getId, resendThisOffer = true)
           }.pipeTo(self)
-      case None => sendMatchResult(data, data.resendThisOffer)
+      case None => completeWithMatchResult(data, data.resendThisOffer)
     }
   }
 
-  private[this] def sendMatchResult(data: OfferData, resendThisOffer: Boolean): Unit = {
+  private[this] def completeWithMatchResult(data: OfferData, resendThisOffer: Boolean): Unit = {
     data.promise.trySuccess(OfferMatcher.MatchedInstanceOps(data.offer.getId, data.ops, resendThisOffer))
     offerQueues -= data.offer.getId
     metrics.currentOffersGauge.setValue(offerQueues.size)
