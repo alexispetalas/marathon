@@ -29,8 +29,12 @@ class ActorOfferMatcher(
       Future.successful(MatchedInstanceOps.noMatch(offer.getId))
     } else {
       val p = Promise[MatchedInstanceOps]()
+
+      // If the promise is not completed before the deadline by the actor
+      // referenced by the actorRef it is completed here.
       scheduler.scheduleOnce(timeout) {
-        if (p.trySuccess(MatchedInstanceOps.noMatch(offer.getId))) {
+        val actorDidNotProcessOfferInTime = p.trySuccess(MatchedInstanceOps.noMatch(offer.getId))
+        if (actorDidNotProcessOfferInTime) {
           logger.warn(s"Could not process offer '${offer.getId.getValue}' in time. (See --offer_matching_timeout)")
         }
       }
@@ -55,7 +59,7 @@ object ActorOfferMatcher {
     * TODO(jdef) pods will probably require a non-LaunchTasks message
     *
     * @param matchingDeadline Don't match after deadline.
-    * @param remainingOffer ???
+    * @param remainingOffer Part of the offer that has not been matched.
     * @param promise The promise to fullfil with match.
     */
   case class MatchOffer(matchingDeadline: Timestamp, remainingOffer: Offer, promise: Promise[MatchedInstanceOps])

@@ -373,9 +373,11 @@ private class TaskLauncherActor(
   }
 
   /**
-    * ???
-    * @param instanceOp ???
-    * @param offer The offer that is accepted.
+    * Mutate internal state in response to having matched an instanceOp.
+    *
+    * @param instanceOp The instanceOp that is to be applied to on a previously
+    *     received offer
+    * @param offer The offer that could be matched successfully.
     * @param promise Promise that tells offer matcher that the offer has been accepted.
     */
   private[this] def handleInstanceOp(instanceOp: InstanceOp, offer: Mesos.Offer, promise: Promise[MatchedInstanceOps]): Unit = {
