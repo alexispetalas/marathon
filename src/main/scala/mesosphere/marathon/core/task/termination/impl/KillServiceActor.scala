@@ -109,17 +109,16 @@ private[impl] class KillServiceActor(
   }
 
   def setupProgressActor(instanceIds: Seq[Instance.Id], promise: Promise[Done]): Unit = {
-    val progressActor = context.actorOf(InstanceKillProgressActor.props(instanceIds, promise))
-    val name = "InstanceKillProgressActor-" + progressActor.hashCode()
     if (instanceIds.nonEmpty) {
+      val progressActor = context.actorOf(InstanceKillProgressActor.props(instanceIds, promise))
+      val name = "InstanceKillProgressActor-" + progressActor.hashCode()
       log.debug("Subscribing {} to events.", name)
       context.system.eventStream.subscribe(progressActor, classOf[InstanceChanged])
       context.system.eventStream.subscribe(progressActor, classOf[UnknownInstanceTerminated])
       log.info("Starting {} to track kill progress of {} instances", name, instanceIds.size)
     } else {
       promise.tryComplete(Try(Done))
-      log.info("premature aborting of {} - no instances to watch for", name)
-      context.stop(progressActor)
+      log.info("No instances to watch for, so not setting up progress actor.")
     }
   }
 
