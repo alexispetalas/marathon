@@ -3,6 +3,7 @@ package core.task.termination.impl
 
 import akka.Done
 import akka.actor.{ Actor, ActorLogging, Cancellable, Props }
+import akka.stream.ActorMaterializer
 import mesosphere.marathon.core.base.Clock
 import mesosphere.marathon.core.task.termination.KillConfig
 import mesosphere.marathon.state.Timestamp
@@ -13,10 +14,10 @@ import mesosphere.marathon.core.instance.Instance
 import mesosphere.marathon.core.instance.update.InstanceUpdateOperation
 import mesosphere.marathon.core.task.termination.InstanceChangedPredicates.considerTerminal
 import mesosphere.marathon.core.task.Task.Id
+import mesosphere.marathon.stream.Sink
 
 import scala.collection.mutable
 import scala.concurrent.{ Future, Promise }
-import scala.util.Try
 
 /**
   * An actor that handles killing instances in chunks and depending on the instance state.
@@ -48,6 +49,8 @@ private[impl] class KillServiceActor(
 
   val instancesToKill: mutable.HashMap[Instance.Id, ToKill] = mutable.HashMap.empty
   val inFlight: mutable.HashMap[Instance.Id, ToKill] = mutable.HashMap.empty
+
+  implicit val materializer = ActorMaterializer()
 
   val retryTimer: RetryTimer = new RetryTimer {
     override def createTimer(): Cancellable = {
@@ -106,6 +109,16 @@ private[impl] class KillServiceActor(
       )
     }
     processKills()
+  }
+
+  /**
+    * Synchronously begins watching event stream for terminated instances
+    */
+  def watchForKilledInstances(instanceIds: Seq[Instance.Id]): Future[Done] = {
+    // TODO - should we add a timeout for this? Previously there was no timeout case
+    KillStreamWatcher.
+      watchForKilledInstances(context.system.eventStream, instanceIds).
+      runWith(Sink.head)
   }
 
   def processKills(): Unit = {
