@@ -15,7 +15,7 @@ import mesosphere.marathon.core.task.termination.InstanceChangedPredicates.consi
 import mesosphere.marathon.core.task.Task.Id
 
 import scala.collection.mutable
-import scala.concurrent.Promise
+import scala.concurrent.{ Future, Promise }
 import scala.util.Try
 
 /**
@@ -96,7 +96,7 @@ private[impl] class KillServiceActor(
 
   def killInstances(instances: Seq[Instance], promise: Promise[Done]): Unit = {
     log.debug("Adding {} instances to queue; setting up child actor to track progress", instances.size)
-    setupProgressActor(instances.map(_.instanceId), promise)
+    promise.completeWith(watchForKilledInstances(instances.map(_.instanceId)))
     instances.foreach { instance =>
       // TODO(PODS): do we make sure somewhere that an instance has _at_least_ one task?
       val taskIds: IndexedSeq[Id] = instance.tasksMap.values.withFilter(!_.isTerminal).map(_.taskId)(collection.breakOut)
@@ -106,20 +106,6 @@ private[impl] class KillServiceActor(
       )
     }
     processKills()
-  }
-
-  def setupProgressActor(instanceIds: Seq[Instance.Id], promise: Promise[Done]): Unit = {
-    if (instanceIds.nonEmpty) {
-      val progressActor = context.actorOf(InstanceKillProgressActor.props(instanceIds, promise))
-      val name = "InstanceKillProgressActor-" + progressActor.hashCode()
-      log.debug("Subscribing {} to events.", name)
-      context.system.eventStream.subscribe(progressActor, classOf[InstanceChanged])
-      context.system.eventStream.subscribe(progressActor, classOf[UnknownInstanceTerminated])
-      log.info("Starting {} to track kill progress of {} instances", name, instanceIds.size)
-    } else {
-      promise.tryComplete(Try(Done))
-      log.info("No instances to watch for, so not setting up progress actor.")
-    }
   }
 
   def processKills(): Unit = {
