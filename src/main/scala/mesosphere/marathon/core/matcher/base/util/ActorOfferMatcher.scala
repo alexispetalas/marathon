@@ -38,6 +38,7 @@ class ActorOfferMatcher(
           logger.warn(s"Could not process offer '${offer.getId.getValue}' in time. (See --offer_matching_timeout)")
         }
       }
+
       actorRef ! ActorOfferMatcher.MatchOffer(deadline, offer, p)
       p.future
     }
