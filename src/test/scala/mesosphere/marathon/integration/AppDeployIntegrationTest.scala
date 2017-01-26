@@ -10,7 +10,7 @@ import mesosphere.marathon.integration.facades.MarathonFacade._
 import mesosphere.marathon.integration.facades.{ ITDeployment, ITEnrichedTask, ITQueueItem }
 import mesosphere.marathon.integration.setup._
 import mesosphere.marathon.state._
-import mesosphere.{ AkkaIntegrationFunTest, Unstable }
+import mesosphere.AkkaIntegrationFunTest
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
@@ -420,7 +420,7 @@ class AppDeployIntegrationTest
     responseUpdatedVersion.value.resources.disk should be (updatedDisk)
   }
 
-  test("kill a task of an App", Unstable) {
+  test("kill a task of an App") {
     Given("a new app")
     val app = appProxy(testBasePath / s"app-${UUID.randomUUID()}", "v1", instances = 1, healthCheck = None)
     val create = marathon.createAppV2(app)
@@ -473,7 +473,7 @@ class AppDeployIntegrationTest
     waitForTasks(app.id, 2)
   }
 
-  test("kill all tasks of an App with scaling", Unstable) {
+  test("kill all tasks of an App with scaling") {
     Given("a new app with multiple tasks")
     val app = appProxy(testBasePath / s"tokill-${UUID.randomUUID()}", "v1", instances = 2, healthCheck = None)
     val create = marathon.createAppV2(app)
