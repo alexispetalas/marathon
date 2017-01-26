@@ -464,7 +464,7 @@ private class TaskLauncherActor(
   private[this] object OfferMatcherRegistration {
     private[this] val myselfAsOfferMatcher: OfferMatcher = {
       //set the precedence only, if this app is resident
-      new ActorOfferMatcher(self, runSpec.residency.map(_ => runSpec.id), context.system.scheduler)
+      new ActorOfferMatcher(self, runSpec.residency.map(_ => runSpec.id))(context.system.scheduler)
     }
     private[this] var registeredAsMatcher = false
 

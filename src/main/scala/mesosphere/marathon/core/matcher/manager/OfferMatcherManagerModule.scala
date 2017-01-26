@@ -37,6 +37,6 @@ class OfferMatcherManagerModule(
     * offers.
     */
   val globalOfferMatcherWantsOffers: Observable[Boolean] = offersWanted
-  val globalOfferMatcher: OfferMatcher = new ActorOfferMatcher(offerMatcherMultiplexer, None, scheduler)
+  val globalOfferMatcher: OfferMatcher = new ActorOfferMatcher(offerMatcherMultiplexer, None)(scheduler)
   val subOfferMatcherManager: OfferMatcherManager = new OfferMatcherManagerDelegate(offerMatcherMultiplexer)
 }

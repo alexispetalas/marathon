@@ -44,20 +44,20 @@ private[manager] object OfferMatcherManagerActor {
   }
 
   /**
-   *
-   * @constructor Create a new instance that bundles offer, deadline and ops.
-   * @param offer The offer that is matched.
-   * @param deadline If an offer is not processed until the deadline the promise
-   *     is succeeded without a match.
-   * @param promise The promise will receive the matched instance ops if a match
-   *     if found. The promise might be fulfilled by the sender, e.g. [[mesosphere.marathon.core.matcher.base.util.ActorOfferMatcher]]
-   *     if the deadline is reached before the offer has been processed.
-   * @param matcherQueue The offer matchers which should be applied to the
-   *     offer.
-   * @param ops ???
-   * @param matchPasses ???
-   * @param resendThisOffer ???
-   */
+    *
+    * @constructor Create a new instance that bundles offer, deadline and ops.
+    * @param offer The offer that is matched.
+    * @param deadline If an offer is not processed until the deadline the promise
+    *     is succeeded without a match.
+    * @param promise The promise will receive the matched instance ops if a match
+    *     if found. The promise might be fulfilled by the sender, e.g. [[mesosphere.marathon.core.matcher.base.util.ActorOfferMatcher]]
+    *     if the deadline is reached before the offer has been processed.
+    * @param matcherQueue The offer matchers which should be applied to the
+    *     offer.
+    * @param ops ???
+    * @param matchPasses ???
+    * @param resendThisOffer ???
+    */
   private case class OfferData(
       offer: Offer,
       deadline: Timestamp,

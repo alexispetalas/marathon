@@ -6,6 +6,8 @@ import com.typesafe.scalalogging.StrictLogging
 import mesosphere.marathon.core.matcher.base.OfferMatcher
 import mesosphere.marathon.core.matcher.base.OfferMatcher.MatchedInstanceOps
 import mesosphere.marathon.state.{ PathId, Timestamp }
+import mesosphere.util._
+import mesosphere.marathon.util.{ Timeout, TimeoutException }
 import org.apache.mesos.Protos.Offer
 
 import scala.concurrent.{ Future, Promise }
@@ -13,11 +15,12 @@ import scala.concurrent.duration._
 
 /**
   * Provides a thin wrapper around an OfferMatcher implemented as an actors.
+  *
+  * @param actorRef Reference to actor that matches offers.
+  * @param precedenceFor Defines which matcher receives offers first. See [[mesosphere.marathon.core.matcher.base.OfferMatcher.precedenceFor]].
   */
-class ActorOfferMatcher(
-    actorRef: ActorRef,
-    override val precedenceFor: Option[PathId],
-    scheduler: akka.actor.Scheduler) extends OfferMatcher with StrictLogging {
+class ActorOfferMatcher(actorRef: ActorRef, override val precedenceFor: Option[PathId])(implicit scheduler: akka.actor.Scheduler)
+    extends OfferMatcher with StrictLogging {
 
   def matchOffer(now: Timestamp, deadline: Timestamp, offer: Offer): Future[MatchedInstanceOps] = {
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,19 +31,15 @@ class ActorOfferMatcher(
       // if deadline is exceeded return no match
       Future.successful(MatchedInstanceOps.noMatch(offer.getId))
     } else {
+
       val p = Promise[MatchedInstanceOps]()
-
-      // If the promise is not completed before the deadline by the actor
-      // referenced by the actorRef it is completed here.
-      scheduler.scheduleOnce(timeout) {
-        val actorDidNotProcessOfferInTime = p.trySuccess(MatchedInstanceOps.noMatch(offer.getId))
-        if (actorDidNotProcessOfferInTime) {
-          logger.warn(s"Could not process offer '${offer.getId.getValue}' in time. (See --offer_matching_timeout)")
-        }
-      }
-
       actorRef ! ActorOfferMatcher.MatchOffer(deadline, offer, p)
-      p.future
+
+      Timeout(timeout)(p.future).recover {
+        case e: TimeoutException =>
+          logger.warn(s"Could not process offer '${offer.getId.getValue}' within ${timeout.toHumanReadable}. (See --offer_matching_timeout)")
+          MatchedInstanceOps.noMatch(offer.getId)
+      }
     }
   }
 
