@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-@SerialIntegrationTest
+@IntegrationTest
 class AppDeployIntegrationTest
     extends AkkaIntegrationFunTest
     with EmbeddedMarathonTest {
@@ -42,7 +42,7 @@ class AppDeployIntegrationTest
 
   test("redeploying an app without changes should not cause restarts") {
     Given("an deployed app")
-    val apps_.back() = appProxy(testBasePath / s"app-${UUID.randomUUID()}", "v1", instances = 1, healthCheck = None)
+    val app = appProxy(testBasePath / s"app-${UUID.randomUUID()}", "v1", instances = 1, healthCheck = None)
     val result = marathon.createAppV2(app)
     result.code should be (201) //Created
     extractDeploymentIds(result) should have size 1
