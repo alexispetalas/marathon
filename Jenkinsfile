@@ -35,8 +35,7 @@ def stageWithCommitStatus(label, block) {
   stage(label) { withCommitStatus(label, block) }
 }
 
-def provisionNodeStage() {
-  stage("Provision Jenkins Node") {
+def provisionNode() {
       sh "sudo apt-get -y clean"
       sh "sudo apt-get -y update"
       sh "sudo apt-get install -y --force-yes --no-install-recommends curl"
@@ -51,21 +50,19 @@ sudo apt-get install -y --force-yes --no-install-recommends mesos=\$MESOS_VERSIO
 }
 
 try {
-    node('JenkinsMarathonCI-Debian8') {
-      stage("Checkout Repo") {
-          checkout scm
-          gitCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-          shortCommit = gitCommit.take(8)
-          currentBuild.displayName = "#${env.BUILD_NUMBER}: ${shortCommit}"
-          stash includes: '**', name: 'repo'
-      }
+    stage("Checkout Repo") {
+      checkout scm
+      gitCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+      shortCommit = gitCommit.take(8)
+      currentBuild.displayName = "#${env.BUILD_NUMBER}: ${shortCommit}"
+      stash includes: '**', name: 'repo'
     }
     parallel (
         "2. Tests": {
-          node('JenkinsMarathonCI-Debian8') {
-            unstash 'repo'
-            provisionNodeStage()
-            stageWithCommitStatus("2. Test") {
+          stageWithCommitStatus("2. Test") {
+            node('JenkinsMarathonCI-Debian8') {
+              unstash 'repo'
+              provisionNodeStage()
               try {
                   timeout(time: 20, unit: 'MINUTES') {
                     withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
@@ -80,10 +77,10 @@ try {
           }
         },
         "2. Test Integration": {
-          node('JenkinsMarathonCI-Debian8') {
-            unstash 'repo'
-            provisionNodeStage()
-            stageWithCommitStatus("3. Test Integration") {
+          stageWithCommitStatus("3. Test Integration") {
+            node('JenkinsMarathonCI-Debian8') {
+              unstash 'repo'
+              provisionNode()
               try {
                   timeout(time: 20, unit: 'MINUTES') {
                     withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
@@ -97,20 +94,19 @@ try {
           }
         }
     )
-    node('JenkinsMarathonCI-Debian8') {
-      stageWithCommitStatus("1. Compile") {
+    stageWithCommitStatus("1. Compile") {
+      node('JenkinsMarathonCI-Debian8') {
+        unstash 'repo'
+        provisionNode()
         try {
-          unstash 'repo'
           withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
             sh "sudo -E sbt -Dsbt.log.format=false clean compile scapegoat doc"
+            sh "sudo -E sbt assembly"
+            archiveArtifacts artifacts: 'target/**/classes/**', allowEmptyArchive: true
           }
         } finally {
           archiveArtifacts artifacts: 'target/**/scapegoat-report/scapegoat.html', allowEmptyArchive: true
         }
-      }
-      stage("4. Assemble and Archive Binaries") {
-          sh "sudo -E sbt assembly"
-          archiveArtifacts artifacts: 'target/**/classes/**', allowEmptyArchive: true
       }
     }
 } catch (Exception err) {
