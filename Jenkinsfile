@@ -48,21 +48,19 @@ sudo apt-get install -y --force-yes --no-install-recommends mesos=\$MESOS_VERSIO
 """
 }
 
+def checkoutRepo() {
+  checkout scm
+  gitCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+  shortCommit = gitCommit.take(8)
+  currentBuild.displayName = "#${env.BUILD_NUMBER}: ${shortCommit}"
+}
+
 try {
-    stage("Checkout Repo") {
-      node('JenkinsMarathonCI-Debian8') {
-        checkout scm
-        gitCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-        shortCommit = gitCommit.take(8)
-        currentBuild.displayName = "#${env.BUILD_NUMBER}: ${shortCommit}"
-        stash includes: '**', name: 'repo'
-      }
-    }
     parallel (
         "2. Tests": {
           stageWithCommitStatus("2. Test") {
             node('JenkinsMarathonCI-Debian8') {
-              unstash 'repo'
+              checkoutRepo()
               provisionNodeStage()
               try {
                   timeout(time: 20, unit: 'MINUTES') {
@@ -80,7 +78,7 @@ try {
         "2. Test Integration": {
           stageWithCommitStatus("3. Test Integration") {
             node('JenkinsMarathonCI-Debian8') {
-              unstash 'repo'
+              checkoutRepo()
               provisionNode()
               try {
                   timeout(time: 20, unit: 'MINUTES') {
@@ -97,7 +95,7 @@ try {
     )
     stageWithCommitStatus("1. Compile") {
       node('JenkinsMarathonCI-Debian8') {
-        unstash 'repo'
+        checkoutRepo()
         provisionNode()
         try {
           withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
