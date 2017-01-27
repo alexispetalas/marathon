@@ -50,9 +50,9 @@ sudo apt-get install -y --force-yes --no-install-recommends mesos=\$MESOS_VERSIO
 
 def checkoutRepo() {
   checkout scm
-  gitCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
-  shortCommit = gitCommit.take(8)
-  currentBuild.displayName = "#${env.BUILD_NUMBER}: ${shortCommit}"
+//  gitCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
+//  shortCommit = gitCommit.take(8)
+//  currentBuild.displayName = "#${env.BUILD_NUMBER}: ${shortCommit}"
 }
 
 try {
