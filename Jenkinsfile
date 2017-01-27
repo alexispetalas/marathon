@@ -63,11 +63,12 @@ try {
               checkoutRepo()
               provisionNodeStage()
               try {
-                  timeout(time: 20, unit: 'MINUTES') {
-                    withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
-                       sh "sudo -E sbt -Dsbt.log.format=false coverage test coverageReport"
-                    }
-                  }
+                 // timeout(time: 20, unit: 'MINUTES') {
+                 //   withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
+                 //      sh "sudo -E sbt -Dsbt.log.format=false coverage test coverageReport"
+                 //   }
+                 // }
+                 sh "exit 0"
               } finally {
                 junit allowEmptyResults: true, testResults: 'target/test-reports/**/*.xml'
                 archiveArtifacts artifacts: 'target/**/coverage-report/cobertura.xml, target/**/scoverage-report/**', allowEmptyArchive: true
@@ -81,11 +82,12 @@ try {
               checkoutRepo()
               provisionNode()
               try {
-                  timeout(time: 20, unit: 'MINUTES') {
-                    withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
-                       sh "sudo -E sbt -Dsbt.log.format=false coverage integration:test mesos-simulation/integration:test coverageReport"
-                    }
-                }
+               // timeout(time: 20, unit: 'MINUTES') {
+               //   withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
+               //      sh "sudo -E sbt -Dsbt.log.format=false coverage integration:test mesos-simulation/integration:test coverageReport"
+               //   }
+               // }
+               sh "exit 1"
               } finally {
                 junit allowEmptyResults: true, testResults: 'target/test-reports/integration/**/*.xml'
               }
