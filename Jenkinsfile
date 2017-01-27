@@ -69,8 +69,8 @@ try {
                  // }
                  sh "exit 0"
               } finally {
-                junit allowEmptyResults: true, testResults: 'target/test-reports/**/*.xml'
-                archiveArtifacts artifacts: 'target/**/coverage-report/cobertura.xml, target/**/scoverage-report/**', allowEmptyArchive: true
+                //junit allowEmptyResults: true, testResults: 'target/test-reports/**/*.xml'
+                //archiveArtifacts artifacts: 'target/**/coverage-report/cobertura.xml, target/**/scoverage-report/**', allowEmptyArchive: true
               }
             }
         },
@@ -86,7 +86,7 @@ try {
                // }
                sh "exit 1"
               } finally {
-                junit allowEmptyResults: true, testResults: 'target/test-reports/integration/**/*.xml'
+                //junit allowEmptyResults: true, testResults: 'target/test-reports/integration/**/*.xml'
               }
             }
         }
