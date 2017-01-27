@@ -56,8 +56,11 @@ def checkoutRepo() {
 }
 
 //try {
+
+    stage("Test")
+
     parallel (
-        "2. Tests": {
+        "Tests": {
             node('JenkinsMarathonCI-Debian8') {
               checkoutRepo()
               //provisionNodeStage()
@@ -74,7 +77,7 @@ def checkoutRepo() {
               }
             }
         },
-        "2. Test Integration": {
+        "Test Integration": {
             node('JenkinsMarathonCI-Debian8') {
               checkoutRepo()
               //provisionNode()
@@ -91,8 +94,10 @@ def checkoutRepo() {
             }
         }
     )
+
+    stage("Compile")
+
     node('JenkinsMarathonCI-Debian8') {
-      stage("Compile") {
         checkoutRepo()
         //provisionNode()
         try {
@@ -105,7 +110,6 @@ def checkoutRepo() {
         } finally {
           //archiveArtifacts artifacts: 'target/**/scapegoat-report/scapegoat.html', allowEmptyArchive: true
         }
-      }
     }
 //} catch (Exception err) {
 //    currentBuild.result = 'FAILURE'
