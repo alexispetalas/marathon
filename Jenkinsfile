@@ -58,7 +58,6 @@ def checkoutRepo() {
 try {
     parallel (
         "2. Tests": {
-          stageWithCommitStatus("2. Test") {
             node('JenkinsMarathonCI-Debian8') {
               checkoutRepo()
               provisionNodeStage()
@@ -74,10 +73,8 @@ try {
                 archiveArtifacts artifacts: 'target/**/coverage-report/cobertura.xml, target/**/scoverage-report/**', allowEmptyArchive: true
               }
             }
-          }
         },
         "2. Test Integration": {
-          stageWithCommitStatus("3. Test Integration") {
             node('JenkinsMarathonCI-Debian8') {
               checkoutRepo()
               provisionNode()
@@ -92,7 +89,6 @@ try {
                 junit allowEmptyResults: true, testResults: 'target/test-reports/integration/**/*.xml'
               }
             }
-          }
         }
     )
     stageWithCommitStatus("1. Compile") {
