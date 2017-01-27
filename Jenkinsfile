@@ -55,7 +55,7 @@ def checkoutRepo() {
 //  currentBuild.displayName = "#${env.BUILD_NUMBER}: ${shortCommit}"
 }
 
-try {
+//try {
     parallel (
         "2. Tests": {
             node('JenkinsMarathonCI-Debian8') {
@@ -107,11 +107,11 @@ try {
         }
       }
     }
-} catch (Exception err) {
-    currentBuild.result = 'FAILURE'
-} finally {
-    step([ $class: 'GitHubCommitStatusSetter'
-         , errorHandlers: [[$class: 'ShallowAnyErrorHandler']]
-         , contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "Velocity All"]
-         ])
-}
+//} catch (Exception err) {
+//    currentBuild.result = 'FAILURE'
+//} finally {
+//    step([ $class: 'GitHubCommitStatusSetter'
+//         , errorHandlers: [[$class: 'ShallowAnyErrorHandler']]
+//         , contextSource: [$class: 'ManuallyEnteredCommitContextSource', context: "Velocity All"]
+//         ])
+//}
