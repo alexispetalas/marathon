@@ -91,8 +91,8 @@ try {
             }
         }
     )
-    stageWithCommitStatus("1. Compile") {
-      node('JenkinsMarathonCI-Debian8') {
+    node('JenkinsMarathonCI-Debian8') {
+      stage("Compile") {
         checkoutRepo()
         provisionNode()
         try {
