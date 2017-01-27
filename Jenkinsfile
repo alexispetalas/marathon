@@ -60,7 +60,7 @@ try {
         "2. Tests": {
             node('JenkinsMarathonCI-Debian8') {
               checkoutRepo()
-              provisionNodeStage()
+              //provisionNodeStage()
               try {
                  // timeout(time: 20, unit: 'MINUTES') {
                  //   withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
@@ -77,7 +77,7 @@ try {
         "2. Test Integration": {
             node('JenkinsMarathonCI-Debian8') {
               checkoutRepo()
-              provisionNode()
+              //provisionNode()
               try {
                // timeout(time: 20, unit: 'MINUTES') {
                //   withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
