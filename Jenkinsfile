@@ -63,10 +63,10 @@ try {
     parallel (
         "2. Tests": {
           node('JenkinsMarathonCI-Debian8') {
+            unstash 'repo'
             provisionNodeStage()
             stageWithCommitStatus("2. Test") {
               try {
-                  unstash 'repo'
                   timeout(time: 20, unit: 'MINUTES') {
                     withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
                        sh "sudo -E sbt -Dsbt.log.format=false coverage test coverageReport"
@@ -80,11 +80,11 @@ try {
           }
         },
         "2. Test Integration": {
-          provisionNodeStage()
           node('JenkinsMarathonCI-Debian8') {
+            unstash 'repo'
+            provisionNodeStage()
             stageWithCommitStatus("3. Test Integration") {
               try {
-                  unstash 'repo'
                   timeout(time: 20, unit: 'MINUTES') {
                     withEnv(['RUN_DOCKER_INTEGRATION_TESTS=true', 'RUN_MESOS_INTEGRATION_TESTS=true']) {
                        sh "sudo -E sbt -Dsbt.log.format=false coverage integration:test mesos-simulation/integration:test coverageReport"
