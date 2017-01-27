@@ -46,7 +46,6 @@ else
 fi
 sudo apt-get install -y --force-yes --no-install-recommends mesos=\$MESOS_VERSION
 """
-  }
 }
 
 try {
