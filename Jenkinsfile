@@ -84,7 +84,7 @@ try {
                //      sh "sudo -E sbt -Dsbt.log.format=false coverage integration:test mesos-simulation/integration:test coverageReport"
                //   }
                // }
-               sh "exit 1"
+               sh "exit 0"
               } finally {
                 //junit allowEmptyResults: true, testResults: 'target/test-reports/integration/**/*.xml'
               }
