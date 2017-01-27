@@ -50,7 +50,7 @@ sudo apt-get install -y --force-yes --no-install-recommends mesos=\$MESOS_VERSIO
 
 try {
     stage("Checkout Repo") {
-      step {
+      node('JenkinsMarathonCI-Debian8') {
         checkout scm
         gitCommit = sh(returnStdout: true, script: 'git rev-parse HEAD').trim()
         shortCommit = gitCommit.take(8)
